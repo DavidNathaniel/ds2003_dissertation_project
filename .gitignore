@@ -1,2 +1,6 @@
 # ignore environment variables
 .env
+
+#ignore library files
+__pycache__/
+node_modules/
