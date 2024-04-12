@@ -27,11 +27,11 @@ class cairis_api():
         session_id = ''
         if response.status_code == 200:
             session_id = response.json()["session_id"]
-            print("POST request successful.") 
+            print("Session ID Created. POST request successful.") 
             self.session_id = session_id
             return session_id
         else:
-            print(f"POST request failed with status code {response.status_code}. Response content:")
+            print(f"Session ID POST request failed with status code {response.status_code}. Response content:")
             print(response.text)
 
         # force exit if no session id is created
@@ -45,7 +45,7 @@ class cairis_api():
             print("No session ID found, please run 'get_session_id'. Exiting.")
             exit()
 
-        # format of payload 
+        # create the payload for GET request
         # 'localhost' bcause CAIRIS is hosted locally through Docker
         url = "http://localhost:80/api/assets"
         headers = {
@@ -63,6 +63,59 @@ class cairis_api():
         else:
             print(f"Request failed with status code {response.status_code}. Response content:")
             print(response.text)
+            
+    # POST an asset to CAIRIS
+    def post_asset(self, asset_name, 
+                   asset_short_code,
+                   asset_description,
+                   asset_significance,
+                   asset_environment,
+                   asset_properties):
+        '''asset_properties = [{'name': 'Confidentiality', 
+            'value': 'Medium', 
+            'rationale': 'testing rationale'}]'''
+        if self.session_id == None:
+            print("No session ID found, please run 'get_session_id'. Exiting...")
+            exit()
+        
+        # create the payload for POST request
+        url = "http://localhost:80/api/assets"
+        headers = {
+            "Content-Type": "application/json",
+        }
+        params = {
+            "session_id": self.session_id,
+        }
+
+        data = {'object': 
+                {
+                    'theName': asset_name, 
+                    'theShortCode': asset_short_code, 
+                    'theDescription': asset_description, 
+                    'theSignificance': asset_significance, 
+                    'theType': 'Hardware', 
+                    'isCritical': 0, 
+                    'theCriticalRationale': '', 
+                    'theTags': [], 
+                    'theInterfaces': [], 
+                    'theEnvironmentProperties': 
+                        [ {
+                            'theEnvironmentName': asset_environment, 
+                            'theProperties': [ asset_properties ], # at least one property must be defined
+                            'theAssociations': []
+                        }]
+                }
+            }
+
+        # post the asset and store results
+        response = requests.post(url, headers=headers, params=params, json=data)
+        if response.status_code == 200:
+            print("Vulnerability POST successful. Response:")
+            print(response.json())
+        else:
+            print(f"Request failed with status code {response.status_code}. Response content:")
+            print(response.text)
+
 
     # get all vulnerabilities from CAIRIS
     def get_vulnerabilities(self):
@@ -70,7 +123,7 @@ class cairis_api():
             print("No session ID found, please run 'get_session_id'. Exiting.")
             exit()
 
-        # grab the vulenerabilities:
+        # create the payload for GET request
         url = "http://localhost:80/api/vulnerabilities"
         headers = {
             "Content-Type": "application/json",
@@ -112,7 +165,7 @@ class cairis_api():
         # clean vulnerability name - CAIRIS has character limitations which clash with SonarCloud
         asset_name = asset_name.replace(':', ';').replace('_', '-')
 
-        # post the vulnerability to CAIRIS:
+        # create the payload for POST request
         url = "http://localhost:80/api/vulnerabilities" #name/" + vulnerability_name
         headers = {
             "Content-Type": "application/json",
@@ -129,7 +182,7 @@ class cairis_api():
             'theEnvironmentProperties': 
                 [
                     {
-                        'theEnvironmentName': 'Testing Environment', 
+                        'theEnvironmentName': 'Default', 
                         'theSeverity': vulnerability_probablity, 
                         'theAssets': [asset_name] 
                     }
@@ -137,7 +190,7 @@ class cairis_api():
             }
         }
 
-        # post the vulnerability and store results
+        # post the vulnerability and print results
         response = requests.post(url, headers=headers, params=params, json=data)
         if response.status_code == 200:
             print("Vulnerability POST successful. Response:")
