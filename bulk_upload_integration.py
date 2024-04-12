@@ -18,7 +18,7 @@ auth_token = os.getenv("SONAR_AUTH_TOKEN")
 # Get Hotspots from sonarcloud
 sonar = sonar_api()
 sonar.get_hotspots()
-print(sonar.hotspots)
+sonar.get_project()
 
 # Get session ID from CAIRIS
 CAIRIS = cairis_api()
@@ -44,20 +44,28 @@ if not assetFound:
     # create_asset_in_cairis()
 
 # Future work: If the asset does not exist in cairis, create it (Option B)
-for hotspot in sonar.hotspots['hotspots']: 
-    if hotspot['component'] not in assets:
+for hotspot in sonar.hotspots['hotspots']:
+    # for future work, the check should be performed, and the asset should be created if it does not exist.
+    # currently the asset is created manually in CAIRIS
+    if hotspot['component'] not in assets and False:
         print('Creating asset in CAIRIS')
-        # create asset code ...
-
+        sonar.get_project()
+        CAIRIS.post_asset(sonar.project)
+        
     else:
         print('Asset already exists in CAIRIS...adding vulnerability.')
-        #add vulnerability
+        # message is an amalgamation of the hotspot message and last few characters of the key
+        message =  f'''{hotspot['message']}\r\n{hotspot['key']}'''
+
+        # future work: review status should be dynamic through SonarCloud API
+        review_status = 'TO_REVIEW:' 
+        name = review_status + hotspot['key'][-6:]
+
+        # add vulnerability
         CAIRIS.post_vulnerability(hotspot['component'],
-                                   hotspot['key'], 
-                                   hotspot['message'], 
+                                   name, 
+                                   message, 
                                    hotspot['vulnerabilityProbability'], 
                                    hotspot['securityCategory'])
-        
         # future work: If the vulnerability already exists in CAIRIS, we should not create a new one.
-        # future work: If the vulnerability already exists, and the review in SonarCloud has changed status, this should be represented in CAIRIS.
     
