@@ -13,11 +13,26 @@ class sonar_api():
         self.session_id = os.environ.get('SONAR_AUTH_TOKEN')
         self.project_key = os.environ.get('SONAR_PROJECT_KEY')
         self.hotspots = None
+        self.project = None
         if self.session_id is None or self.project_key is None:
-            print("Please set the environment variableS: SONAR_AUTH_TOKEN, SONAR_PROJECT_KEY")
+            print("Please set the environment variables: SONAR_AUTH_TOKEN, SONAR_PROJECT_KEY")
             print("Exiting.")
             exit()
     
+    # retrieve Project information from SonarCloud
+    def get_project(self):
+        url = 'https://sonarcloud.io/api/components/show?component=' + self.project_key
+        headers = {
+            'Authorization': self.session_id,
+        }   
+
+        # Project GET request
+        response = requests.get(url, headers=headers)
+        if (response.status_code == 200 ):
+            self.project = response.json()
+        else:
+            print(f"Request failed with status code {response.status_code}. Response content:")
+            print(response.text)
 
     # retrieve all hotspots from SonarCloud
     def get_hotspots(self):
@@ -26,10 +41,9 @@ class sonar_api():
             'Authorization': self.session_id,
         }   
 
-        # Get the hotspotsfrom SonarCloud
+        # Get the hotspots from SonarCloud
         response = requests.get(url, headers=headers)
         if (response.status_code == 200 ):
-            #print(response.json())
             self.hotspots = response.json()
         else:
             print(f"Request failed with status code {response.status_code}. Response content:")
